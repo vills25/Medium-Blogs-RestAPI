@@ -10,7 +10,7 @@ class UserAdmin(admin.ModelAdmin):
     search_fields = ['username', 'email', 'full_name']
 
 class ArticleAdmin(admin.ModelAdmin):
-    list_display = ('title', 'author', 'published_at', 'updated_at')
+    list_display = ('article_title', 'author', 'published_at', 'updated_at')
 
 class PublicationAdmin(admin.ModelAdmin):
     list_display = ('publication_title', 'owner', 'created_at')

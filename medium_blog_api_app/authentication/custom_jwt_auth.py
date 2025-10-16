@@ -114,7 +114,6 @@ class IsMemberUser(BasePermission):
     message = "You must be a member to access this content."
 
     def has_permission(self, request, view):
-        # Allow safe methods for everyone if needed
         return request.user and request.user.is_authenticated and request.user.is_member
 
     def has_object_permission(self, request, view, obj):

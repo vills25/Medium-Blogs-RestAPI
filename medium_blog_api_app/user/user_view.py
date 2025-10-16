@@ -1,4 +1,5 @@
 from django.forms import ValidationError
+from medium_blog_api_app.authentication.custom_jwt_auth import IsAuthenticatedCustom
 from medium_blog_api_app.models import * 
 from medium_blog_api_app.serializers import *
 from rest_framework.response import Response
@@ -69,3 +70,253 @@ def register_user(request):
 
     except Exception as e:
         return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+## Login user
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_user(request):
+    username = request.data.get("username/email/phone_number")
+    password = request.data.get("password")
+
+    try:
+        user = User.objects.filter(Q(username=username) | Q(email=username) | Q(contact_number=username)).first()
+
+        if not username or not password:
+            return Response({"status":"fail","message":"please enter username and password"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user:
+            return Response({"status":"fail","message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if not check_password(password, user.password):
+            return Response({"status":"fail","message":"Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user_data = {"username": user.username, "email": user.email, "full_name": user.full_name, "contact_number": user.contact_number}
+        
+        if user:
+
+            refresh = RefreshToken()
+            refresh['user_id'] = user.user_id
+            refresh['username'] = user.username
+
+        return Response({"status": "success","message": "Login successful","data":{"User": user_data,"access_token": str(refresh.access_token)}}, status=status.HTTP_200_OK)
+
+    except User.DoesNotExist:
+        return Response({"status":"fail","message":"User not found or account is deactivated"}, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+## logout User
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def logout_user(request):
+    try:
+        access_token = request.auth
+
+        if isinstance(access_token, bytes):
+            access_token = access_token.decode("utf-8")
+
+        with transaction.atomic():
+            TokenBlacklistLogout.objects.create(
+                user=request.user,
+                token=str(access_token),
+                is_expired=True,
+                expire_datetime=timezone.now()
+            )
+        
+        return Response({"status":"success","message": "Logout successful"}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+## edit profile
+@api_view(['PUT'])
+@permission_classes([IsAuthenticatedCustom])
+def edit_profile(request):
+    try:
+        user = request.user
+
+        get_username = request.data.get('username')
+        get_email = request.data.get('email')
+        get_full_name = request.data.get('full_name')
+        get_contact_number = request.data.get('contact_number')
+        get_bio = request.data.get('bio')
+        get_gender = request.data.get('gender')
+        get_profile_pic = request.FILES.get('profile_pic')
+        get_remove_profile_pic = request.data.get('remove_profile_pic')
+
+        with transaction.atomic():
+
+            if request.user.user_id != user.user_id and not request.user.is_superuser:
+                    return Response({"status":"fail", "message": "you can not update others profile"}, status=status.HTTP_403_FORBIDDEN)
+
+            # Validate and assign new profile picture
+            if get_profile_pic:
+                try:
+                    validate_image(get_profile_pic)
+                    user.profile_pic = get_profile_pic
+                except ValidationError as e:
+                    return Response({"status": "fail", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+
+            if get_remove_profile_pic in ['true', 'True']:
+                if user.profile_pic:
+                    user.profile_pic.delete(save=False)
+                    user.profile_pic = None
+
+            if get_username:
+                if User.objects.filter(username=get_username).exists():
+                    return Response({"status":"fail","message":"Username already exist, try some diffrent username."}, status=status.HTTP_400_BAD_REQUEST)
+                user.username = get_username
+
+            if get_email:
+                if User.objects.filter(email=get_email).exists():
+                    return Response({"status":"fail", "message":f"user with email: {get_email} already registered"}, status=status.HTTP_400_BAD_REQUEST)
+                user.email = get_email
+
+            if get_contact_number:
+                if User.objects.filter(contact_number = get_contact_number).exists():
+                    return Response({"status":"fail", "message":f"user with contact number: {get_contact_number} already registered"}, status=status.HTTP_400_BAD_REQUEST)
+                user.contact_number = get_contact_number
+
+            if get_full_name:
+                user.full_name = get_full_name
+
+            if get_bio:
+                user.bio = get_bio
+
+            if get_gender:
+                user.gender = get_gender
+
+            user.updated_at = timezone.now()
+            user.updated_by = request.user
+            user.save()
+
+            serializer = UserShortDetailSerializer(user, context={'request': request})
+            return Response({"status":"success","message": "Profile updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+## Delete/Deactivate profile
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticatedCustom])
+def delete_profile(request):
+    user = request.data
+
+    if not request.user.is_superuser and request.user.user_id != user.user_id:
+        return Response({"status":"fail", "message": "you can not delete others profile"}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        with transaction.atomic():
+            user = User.objects.get(user_id=user.user_id)
+            user.delete()
+            user.save()
+            message = "Profile deleted successfully"
+            return Response({"status":"success","message": message}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+## Deactivate User profile/account
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def deactivate_profile(request):
+    user = request.user
+    get_deactivate_request = request.data.get('deactivate')
+
+    if request.user.user_id != user.user_id:
+        return Response({"status":"fail", "message": "you can not deactivate others profile"}, status=status.HTTP_403_FORBIDDEN)
+
+    try:
+        with transaction.atomic():
+            user = User.objects.get(user_id=user.user_id)
+            if get_deactivate_request in ['true', 'True']:     
+                user.is_active = False
+                user.is_member = False
+                TokenBlacklistLogout.objects.create(user=request.user,token=str(request.auth.token),is_expired=True,expire_datetime=timezone.now())
+                user.save()
+                return Response({"status":"success","message": "Profile deactivated successfully"}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+## Change password
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def change_password(request):
+    try:
+        user = request.user
+
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not old_password or not new_password or not confirm_password:
+            return Response({"status":"fail","message":"All password fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not check_password(old_password, user.password):
+            return Response({"status":"fail","message":"Invalid old password"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        if new_password != confirm_password:
+            return Response({"status":"fail","message":"New password and confirm password do not match"}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.password = make_password(new_password)
+        user.save()
+
+        return Response({"status":"success","message":"Password changed successfully"}, status=status.HTTP_200_OK)
+
+    except Exception as e:    
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+## Forgot password
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def forgot_password(request):
+    email = request.data.get("email")
+
+    if not email:
+        return Response({"status":"fail","message":"email required"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        user = User.objects.get(email=email)
+        otp = generate_otp()
+        request.session["reset_email"] = email
+        request.session["reset_otp"] = otp
+        request.session["reset_time"] = str(timezone.now())
+        send_otp_email(email, otp)
+        return Response({"status":"success","message":f"OTP sent to email id: {email}"}, status=status.HTTP_200_OK)
+    
+    except User.DoesNotExist:
+        return Response({"status":"fail","message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+## Reset Password
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request):
+    email = request.data.get("email")
+    otp = request.data.get("otp")
+    raw_password = request.data.get("new_password")
+    confirm_password = request.data.get("confirm_new_password")
+    new_password = check_password(raw_password, confirm_password)
+
+    if not email or not otp or not raw_password or not confirm_password:
+            return Response({"status":"fail","message":"email, otp, new_password required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.get(email=email)
+
+        if request.session.get("reset_email") != email or request.session.get("reset_otp") != otp:
+            return Response({"status":"fail","message":"Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if raw_password != confirm_password:
+            return Response({"status":"fail","message":"Password and confirm password do not match"}, status= status.HTTP_400_BAD_REQUEST)
+
+        user.password = make_password(raw_password)
+        user.save()
+
+        return Response({"status":"success","message":"Password changed successfully"}, status=status.HTTP_200_OK)
+
+    except User.DoesNotExist:
+        return Response({"status": "fail", "message":"User not found"}, status= status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:    
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

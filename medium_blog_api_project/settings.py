@@ -77,7 +77,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'vishalsohaliya25@gmail.com'
-EMAIL_HOST_PASSWORD = 'fjlw ojmd unab tbku'
+EMAIL_HOST_PASSWORD = 'edbc joks uqcj oxfe'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 #media handle
