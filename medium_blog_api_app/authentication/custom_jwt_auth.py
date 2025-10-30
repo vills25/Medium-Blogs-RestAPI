@@ -96,15 +96,29 @@ class IsAdminCustom(BasePermission):
     """
     Allows access only to admin users.
     """
-    def has_permission(self, request, view):
-            validate_token_not_blacklisted(request)
+    # def has_permission(self, request, view):
+    #         validate_token_not_blacklisted(request)
             
-            if not (request.user and hasattr(request.user, 'user_id') and hasattr(request.user, 'role')):
-                return False
-            if request.user.role != "admin":
-                return False
+    #         if not (request.user and hasattr(request.user, 'user_id') and hasattr(request.user, 'role')):
+    #             return False
+    #         if request.user.role != "admin":
+    #             return False
 
-            return True
+    #         return True
+
+    def has_permission(self, request, view):
+        # token check
+        validate_token_not_blacklisted(request)
+
+        user = request.user
+        if not user or not hasattr(user, 'user_id'):
+            return False
+
+        if not getattr(user, 'is_admin', False):
+            return False
+
+        return True
+
 
 class IsMemberUser(BasePermission):
     """

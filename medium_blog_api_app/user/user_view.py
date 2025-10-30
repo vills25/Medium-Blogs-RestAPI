@@ -90,7 +90,7 @@ def login_user(request):
         if not check_password(password, user.password):
             return Response({"status":"fail","message":"Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        user_data = {"username": user.username, "email": user.email, "full_name": user.full_name, "contact_number": user.contact_number}
+        user_data = {"username": user.username, "email": user.email, "full_name": user.full_name}
         
         if user:
 
@@ -320,3 +320,141 @@ def reset_password(request):
 
     except Exception as e:    
         return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+## Follow user
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def follow_user(request):
+    follower = request.user
+    target_user_id = request.data.get('user_id')
+    mark_as_following = request.data.get('mark_as_following')
+
+    if not target_user_id:
+        return Response({"status": "error", "message": "user_id is required"},status=status.HTTP_400_BAD_REQUEST)
+
+    if follower.user_id == target_user_id:
+        return Response({"status": "fail", "message": "You cannot follow yourself"},status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        target_user = User.objects.get(user_id = target_user_id)
+
+        if target_user in follower.following_users.all():
+            return Response({"status": "fail", "message": "Already following this user"},status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            if mark_as_following == 'true' or mark_as_following == 'True':
+                follower.following_users.add(target_user)
+                target_user.followers_count += 1
+                target_user.save(update_fields=['followers_count'])
+
+        return Response({"status": "success", "message": f"You are now following {target_user.username}"},status=status.HTTP_200_OK)
+
+    except User.DoesNotExist:
+        return Response({"status": "error", "message": "User not found"},status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+
+## Unfollow user
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def unfollow_user(request):
+    follower = request.user
+    target_user_id = request.data.get('user_id')
+    mark_as_unfollow = request.data.get('mark_as_unfollow')
+
+    if not target_user_id:
+        return Response({"status": "error", "message": "user_id is required"},status=status.HTTP_400_BAD_REQUEST)
+
+    if follower.user_id == target_user_id:
+        return Response({"status": "fail", "message": "You cannot follow yourself"},status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        target_user = User.objects.get(user_id = target_user_id)
+
+        if target_user not in follower.following_users.all():
+            return Response({"status": "fail", "message": "You are not following this user"},status=status.HTTP_400_BAD_REQUEST)
+
+        with transaction.atomic():
+            if mark_as_unfollow == 'true' or mark_as_unfollow == 'True':
+                follower.following_users.remove(target_user)
+                target_user.followers_count -= 1
+                target_user.save(update_fields=['followers_count'])
+
+        return Response({"status": "success", "message": f"You unfollowed {target_user.username}"},status=status.HTTP_200_OK)
+
+    except User.DoesNotExist:
+        return Response({"status": "error", "message": "User not found"},status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+
+## View my profile
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedCustom])
+def view_my_profile(request):
+    try:
+        user = User.objects.get(user_id=request.user.user_id)
+        serializer = UserSerializer(user, context={'request': request})
+
+        return Response({"status":"success","message":"Profile fetched successfully","data":serializer.data}, status=status.HTTP_200_OK)
+
+    except User.DoesNotExist:
+        return Response({"status":"fail","message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    except Exception as e:
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+## view other user profile
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedCustom])
+def view_other_user_profile(request):
+
+    get_userid = request.data.get('user_id')
+
+    try:
+        user = User.objects.get(user_id=get_userid)
+        serializer = UserProfileSerializer(user, context={'request': request})
+
+        return Response({"status":"success","message":"Profile fetched successfully","data":serializer.data}, status=status.HTTP_200_OK)
+
+    except User.DoesNotExist:
+        return Response({"status":"fail","message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    except Exception as e:
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+## view my following lists user/publications..
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedCustom])
+def view_my_following_list(request):
+    try:
+        user = request.user
+
+        following_users = user.following_users.all()
+        users_data = [
+            {
+                "user_id": u.user_id,
+                "username": u.username,
+                "full_name": u.full_name,
+                "profile_pic": request.build_absolute_uri(u.profile_pic.url) if u.profile_pic else None
+            }
+            for u in following_users
+        ]
+
+        following_publications = Publication.objects.filter(followers=user)
+        publications_data = [
+            {
+                "publication_id": p.publication_id,
+                "publication_title": p.publication_title,
+                "logo_image": request.build_absolute_uri(p.logo_image.url) if p.logo_image else None,
+                "owner": p.owner.username
+            }
+            for p in following_publications
+        ]
+
+        return Response({"status": "success","message": "Following list fetched","results": {"users": users_data,"publications": publications_data}},status=status.HTTP_200_OK)
+                                
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+    

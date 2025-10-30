@@ -1,0 +1,16 @@
+view_my_profile
+view_other_user_profile
+get_reported_articles
+get_all_articles - Modified with custome response 
+def create_readinglist(request):
+
+
+mute_unmute_author
+mute_unmute_publications
+view_my_following_list OK
+view_all_topics OK
+search_topics OK
+view_publications OK
+get_readinglist OK
+get_my_articles OK
+show_less_like_this 

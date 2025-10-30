@@ -2,6 +2,19 @@
 import random
 from django.core.mail import send_mail
 from django.forms import ValidationError
+import math
+from django.core.exceptions import ValidationError
+
+def estimate_read_time(text):
+    """
+    Estimate read-time in minutes (200 wpm).
+    """
+    if not text:
+        return 0
+    words = len(str(text).split())
+    minutes = math.ceil(words / 200)
+    return max(1, minutes)
+
 
 def validate_image(image):
     allowed_extensions = ['jpg', 'png', 'jpeg']
