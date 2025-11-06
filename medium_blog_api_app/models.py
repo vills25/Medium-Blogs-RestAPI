@@ -71,6 +71,10 @@ class Article(models.Model):
     is_saved = models.BooleanField(default=False)
     is_reported = models.BooleanField(default=False)
     show_less_like_this = models.BooleanField(default=False)
+    allow_to_share_article = models.BooleanField(default=True)
+    shared_from = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='shared_articles')
+    shared_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='shared_by_user')
+    share_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.article_title

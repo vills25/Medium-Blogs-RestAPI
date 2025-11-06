@@ -10,12 +10,37 @@ from django.db import transaction
 from django.db.models import Q
 from medium_blog_api_app.utils import validate_image
 from django.db.models import F
+from loguru import logger
 
 #################### READINGLIST #####################
 ## Create readinglist
 @api_view(['POST'])
 @permission_classes([IsAuthenticatedCustom])
 def create_readinglist(request):
+    """
+    Create readinglist.
+
+    Parameters:
+    article_id (int): article_id
+    visibility (string): visibility of the reading list
+
+    Response:
+    {
+        "status": "success",
+        "message": "Readinglist created",
+        "data": {
+            "reading_list_id": "integer",
+            "article_id": "integer",
+            "article_title": "string",
+            "article_category": "string",
+            "visibility": "string",
+            "created_at": "datetime",
+            "updated_at": "datetime",
+            "created_by": "integer",
+            "updated_by": "integer"
+        }
+    }
+    """
     article_id = request.data.get('article_id')
     visibility = request.data.get('visibility', 'public')
 
@@ -50,7 +75,6 @@ def create_readinglist(request):
 
     except Exception as e:
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
 
 ## Get readinglist
 @api_view(['GET'])
@@ -59,7 +83,327 @@ def get_readinglist(request):
     try:
         readinglist = ReadingList.objects.filter(user = request.user).all().order_by('-created_at')
         serializer = ReadingListSerializer(readinglist, many=True, context={'request': request})
+
+        if not readinglist:
+            return Response({"status": "error", "message": "Readinglist not found"}, status=status.HTTP_404_NOT_FOUND)
+        
         return Response({"status": "success", "message": "Readinglist found", "data": serializer.data}, status=status.HTTP_200_OK)
     
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+## Edit readinglist
+@api_view(['PUT'])
+@permission_classes([IsAuthenticatedCustom])
+def edit_readinglist(request):
+
+    readinglist_id = request.data.get('readinglist_id')
+    visibility = request.data.get('visibility', 'public')
+
+    if not readinglist_id:
+        return Response({"status": "error", "message": "readinglist_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with transaction.atomic():
+            readinglist = ReadingList.objects.get(readinglist_id = readinglist_id)
+
+            readinglist.visibility = visibility
+            readinglist.updated_at = timezone.now()
+            readinglist.updated_by = request.user
+            readinglist.save()
+
+        serializer = ReadingListSerializer(readinglist, context={'request': request})
+        return Response({"status": "success", "message": "Readinglist updated", "data": serializer.data}, status=status.HTTP_200_OK)
+    
+    except ReadingList.DoesNotExist:
+        return Response({"status": "error", "message": "Readinglist not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+## Delete readinglist
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticatedCustom])
+def delete_readinglist(request):
+
+    """
+    Delete a reading list item.
+
+    Request Body:
+    {
+        "readinglist_id": 12
+    }
+
+    Response:
+    {
+        "status": "success",
+        "message": "Readinglist deleted"
+    }
+    """
+    readinglist_id = request.data.get('readinglist_id')
+
+    if not readinglist_id:
+        return Response({"status": "error", "message": "readinglist_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with transaction.atomic():
+            readinglist = ReadingList.objects.get(readinglist_id = readinglist_id)
+
+            readinglist.delete()
+
+            ReadingList.objects.filter(user=request.user).update(total_articles_in_lists_count=F('total_articles_in_lists_count') - 1)
+
+        return Response({"status": "success", "message": "Readinglist deleted"}, status=status.HTTP_200_OK)
+    
+    except ReadingList.DoesNotExist:
+        return Response({"status": "error", "message": "Readinglist not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+## Add Multiple Articles to Reading List
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def add_multiple_to_readinglist(request):
+    """
+    Add multiple articles to reading list at once.
+
+    Request Body:
+    {
+        "article_ids": [25, 30, 35],
+        "visibility": "public"
+    }
+    """
+    article_ids = request.data.get('article_ids', [])
+    visibility = request.data.get('visibility', 'public')
+
+    if not article_ids:
+        return Response({"status": "error","message": "article_ids is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+
+        try:
+
+            if ',' in str(article_ids):
+                article_ids = [int(a.strip()) for a in str(article_ids).split(',') if a.strip().isdigit()]
+
+            elif str(article_ids).isdigit():
+                article_ids = [int(article_ids)]
+
+            else:
+                article_ids = [int(a) for a in article_ids]
+        except Exception:
+            return Response({"status": "error","message": "Invalid article_ids format"}, status=status.HTTP_400_BAD_REQUEST)
+
+        added_count = 0
+        skipped_count = 0
+
+        with transaction.atomic():
+            for article_id in article_ids:
+                try:
+                    article = Article.objects.get(article_id=article_id)
+
+                    if ReadingList.objects.filter(user=request.user, article=article).exists():
+                        skipped_count += 1
+                        continue
+
+                    ReadingList.objects.create(
+                        article=article,
+                        visibility=visibility,
+                        user=request.user,
+                        created_by=request.user,
+                        updated_by=request.user
+                    )
+                    added_count += 1
+
+                except Article.DoesNotExist:
+                    skipped_count += 1
+                    continue
+
+            total_articles = ReadingList.objects.filter(user=request.user).count()
+
+        return Response({
+            "status": "success","message": f"{added_count} articles added to reading list","data": {"added_count": added_count,"skipped_count": skipped_count,
+                                         "total_articles_in_list": total_articles}}, status=status.HTTP_200_OK)
+
+    except Article.DoesNotExist:
+        return Response({"status": "error","message": "Article not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        return Response({"status": "error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+## Clear Reading List
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticatedCustom])
+def clear_readinglist(request):
+    """
+    Clear entire reading list.
+
+    Response:
+    {
+        "status": "success",
+        "message": "Reading list cleared successfully",
+        "data": {
+            "deleted_count": 12,
+            "total_articles_removed": 12
+        }
+    }
+    """
+    user = request.user
+    get_reading_list_id = request.data.get('readinglist_id')
+
+    if not get_reading_list_id:
+        return Response({"status": "error", "message": "readinglist_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with transaction.atomic():
+            deleted_count = ReadingList.objects.filter(reading_list_id = get_reading_list_id).count()
+
+            delete_readinglist = ReadingList.objects.filter(user=user)
+            delete_readinglist.delete()
+
+            if not delete_readinglist:
+                return Response({"status": "error", "message": "Reading list not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            ReadingList.objects.filter(user=user).update(total_articles_in_lists_count=F('total_articles_in_lists_count') - deleted_count)
+
+        return Response({"status": "success","message": "Reading list cleared successfully","data": {"deleted_count": deleted_count,"total_articles_removed": deleted_count}
+                            }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+## Search in Reading List
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def search_readinglist(request):
+    """
+    Search articles in reading list.
+
+    Request Body:
+    {
+        "search_text": "python"
+    }
+
+    Response:
+    {
+        "status": "success",
+        "message": "Search results found",
+        "data": [
+            {
+                "reading_list_id": 8,
+                "article_id": 25,
+                "article_title": "Introduction to Python Programming",
+                "article_category": "Programming",
+                "visibility": "public",
+                "created_at": "2024-01-15T10:30:00Z",
+                "updated_at": "2024-01-15T10:30:00Z",
+                "match_reason": "Title contains 'python'"
+            }
+        ]
+    }
+    """
+    user = request.user
+    search_text = request.data.get('search_text')
+
+    if not search_text:
+        return Response({"status": "error", "message": "search_text is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+
+        reading_list_items = ReadingList.objects.filter(user=user).filter(
+                                        Q(article__article_title__icontains=search_text) |
+                                        Q(article__article_content__icontains=search_text) |
+                                        Q(article__article_category__icontains=search_text)
+                                    ).select_related('article')
+
+        search_results = []
+        for item in reading_list_items:
+            match_reason = []
+            if search_text.lower() in item.article.article_title.lower():
+                match_reason.append("Title contains search text")
+            if search_text.lower() in item.article.article_content.lower():
+                match_reason.append("Content contains search text")
+            if search_text.lower() in (item.article.article_category or "").lower():
+                match_reason.append("Category contains search text")
+            
+            search_results.append({
+                "reading_list_id": item.reading_list_id,
+                "article_id": item.article.article_id,
+                "article_title": item.article.article_title,
+                "article_category": item.article.article_category,
+                "visibility": item.visibility,
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+                "match_reason": ", ".join(match_reason) if match_reason else "Relevant match"
+            })
+
+        if not search_results:
+            return Response({"status": "error", "message": "No search results found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({"status": "success","message": "Search results found","data": search_results}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+## Get Reading List Stats
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedCustom])
+def get_readinglist_stats(request):
+    """
+    Get reading list statistics.
+
+    Response:
+    {
+        "status": "success",
+        "message": "Reading list stats fetched",
+        "data": {
+            "total_articles": 15,
+            "public_articles": 10,
+            "private_articles": 5,
+            "total_read_time": 125,
+            "categories": {
+                "Programming": 6,
+                "Web Development": 4,
+                "Data Science": 3,
+                "Design": 2
+            },
+            "last_added": "2024-01-15T10:30:00Z"
+        }
+    }
+    """
+    
+    get_user = request.user
+    
+    try:
+        reading_list_items = ReadingList.objects.filter(user=get_user).select_related('article')
+        
+        total_articles = reading_list_items.count()
+        public_articles = reading_list_items.filter(visibility='public').count()
+        private_articles = reading_list_items.filter(visibility='private').count()
+        
+        total_read_time = 0
+        categories = {}
+        
+        for item in reading_list_items:
+            total_read_time += item.article.read_time if item.article.read_time else 0
+            
+            category = item.article.article_category
+            if category:
+                categories[category] = categories.get(category, 0) + 1
+        
+        last_added = reading_list_items.order_by('-created_at').first()
+        
+        stats_data = {
+            "total_articles": total_articles,
+            "public_articles": public_articles,
+            "private_articles": private_articles,
+            "total_read_time": total_read_time,
+            "categories": categories,
+            "last_added": last_added.created_at if last_added else None
+        }
+
+        return Response({"status": "success", "message": "Reading list stats fetched","data": stats_data}, status=status.HTTP_200_OK)
+
     except Exception as e:
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

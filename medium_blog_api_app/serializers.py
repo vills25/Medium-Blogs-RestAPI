@@ -6,7 +6,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['user_id','username','full_name','email','profile_pic','contact_number','bio','gender','is_writer','is_member','is_active','is_following','following_users',
-            'is_following_publications','followers_count','created_at','updated_at']
+                'is_following_publications','followers_count','created_at','updated_at']
 
 class UserShortSerializer(serializers.ModelSerializer):
     class Meta:
@@ -52,7 +52,32 @@ class ArticleListSerializer(serializers.ModelSerializer):
     publication = PublicationSerializer(read_only=True)
     class Meta:
         model = Article
-        fields = ['article_id','article_title','article_subtitle','author','publication','read_time','clap_count','comment_count','published_at','is_member_only']
+        fields = ['article_id','article_title','article_subtitle','article_content','author','publication','read_time','clap_count','comment_count','published_at','is_member_only']
+
+class ArticleFeedSerializer(serializers.ModelSerializer):
+    author = serializers.CharField(source='author.username', read_only=True)
+    publication = serializers.CharField(source='publication.publication_title', read_only=True)
+    original_author_name = serializers.SerializerMethodField()
+    is_shared = serializers.SerializerMethodField()
+    shared_from = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Article
+        fields = [
+            'article_id', 'article_title', 'article_subtitle', 'author',
+            'publication', 'is_member_only', 'article_content',
+            'published_at', 'image', 'url', 'read_time', 'clap_count', 'comment_count',
+            'original_author_name', 'is_shared', 'shared_from', 'share_count'
+        ]
+
+    def get_original_author_name(self, obj):
+        return obj.shared_from.author.username if obj.shared_from else None
+
+    def get_is_shared(self, obj):
+        return True if obj.shared_from else False
+
+    def get_shared_from(self, obj):
+        return obj.shared_from.article_id if obj.shared_from else None
 
 ################### TOPICS, ArticlePublication ######################
 class TopicsSerializer(serializers.ModelSerializer):
@@ -86,3 +111,4 @@ class ReadingListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReadingList
         fields = ['reading_list_id', 'user', 'article', 'visibility', 'total_articles_in_lists_count','created_at', 'updated_at']
+

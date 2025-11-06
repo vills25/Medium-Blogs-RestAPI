@@ -1,5 +1,5 @@
 from django.urls import path
-from medium_blog_api_app.articles_blogs.readinglist import create_readinglist
+from medium_blog_api_app.articles_blogs.readinglist import *
 from medium_blog_api_app.user.user_view import *
 from medium_blog_api_app.articles_blogs.articles_view import *
 from medium_blog_api_app.articles_blogs.clap_and_comments import *
@@ -32,7 +32,13 @@ urlpatterns = [
     path('report-articles/', report_article),
     path('get-reported-articles/', get_reported_articles),
     path('get-my-articles/', get_my_articles),
-
+    path('share-article/', share_article),
+    path('undo-reshare/',undo_reshare),
+    path('shared-articles/', get_shared_articles),
+    path('mute-author/', mute_author),
+    path('mute-publication/', mute_publication),
+    path('show-less/', show_less_like_this_func),
+    
     #-------- TOPICS --------#
     path('create-topic/', create_topic),
     path('edit-topic/', edit_topic),
@@ -44,6 +50,7 @@ urlpatterns = [
     path('create-publication/', create_publication),
     path('edit-publication/', edit_publication),
     path('delete-publication/', delete_publication),
+    path('view-publication/', view_publications),
     path('follow-publication/', follow_publication),
     path('unfollow-publication/', unfollow_publication),
 
@@ -64,6 +71,12 @@ urlpatterns = [
 
     #-------- LISTS --------#
     path('create-readinglist/', create_readinglist),
-
+    path('get-readinglist/', get_readinglist),
+    path('delete-readinglist/', delete_readinglist),
+    path('edit-readinglist/', edit_readinglist),
+    path('add-multiple-to-readinglist/', add_multiple_to_readinglist),
+    path('clear-readinglist/', clear_readinglist),
+    path('search-readinglist/', search_readinglist),
+    path('get-readinglist-stats/', get_readinglist_stats),
 
 ]
