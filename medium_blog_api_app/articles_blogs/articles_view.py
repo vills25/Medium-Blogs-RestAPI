@@ -791,6 +791,42 @@ def get_shared_articles(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticatedCustom])
 def get_articles_stats(request):
+    """
+    Get stats of articles.
+
+    Response:
+    {
+        "status": "success",
+        "message": "Articles fetched successfully",
+        "stats": {
+            "total_articles": integer,
+            "shared_articles": integer,
+            "total_read_time": integer,
+        },
+        "results": [
+            {
+                "article_id": integer,
+                "article_title": string,
+                "article_subtitle": string,
+                "article_content": string,
+                "article_category": string,
+                "url": string,
+                "video": string,
+                "code_block": string,
+                "is_member_only": boolean,
+                "allow_to_share_article": boolean,
+                "image": string,
+                "created_at": datetime,
+                "updated_at": datetime,
+                "created_by": string,
+                "updated_by": string,
+                "published_at": datetime,
+                "published_by": string,
+                "clap_count": integer,
+            }
+        ]
+    }
+    """
     logger.info(f"Articles stats requested by user: {request.user.username}")
     
     try:
