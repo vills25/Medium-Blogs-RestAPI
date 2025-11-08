@@ -25,10 +25,48 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 ################### PUBLICATION ######################
 class PublicationSerializer(serializers.ModelSerializer):
-    owner = UserShortSerializer(read_only=True)
+    owner = serializers.SerializerMethodField()
+    editors = serializers.SerializerMethodField()
+    writers = serializers.SerializerMethodField()
+    followers = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
+    updated_by = serializers.SerializerMethodField()
+
     class Meta:
         model = Publication
-        fields = '__all__'
+        fields = [
+            'publication_id', 'owner', 'publication_title', 'short_note', 'logo_image',
+            'topics_of_publications', 'created_at', 'updated_at', 'is_public',
+            'default_article_visibility', 'topic', 'created_by', 'updated_by',
+            'editors', 'writers', 'followers'
+        ]
+
+    def get_owner(self, obj):
+        owner = obj.owner
+        if owner:
+            return {
+                "full_name": owner.full_name,
+                "profile_pic": self.context['request'].build_absolute_uri(owner.profile_pic.url) if owner.profile_pic else None,
+                "followers_count": owner.followers_count,
+                "is_writer": owner.is_writer,
+            }
+        return None
+
+    def get_editors(self, obj):
+        return [user.username for user in obj.editors.all()]
+
+    def get_writers(self, obj):
+        return [user.username for user in obj.writers.all()]
+
+    def get_followers(self, obj):
+        return [user.username for user in obj.followers.all()]
+    
+    def get_created_by(self, obj):
+        return obj.created_by.full_name if obj.created_by else None
+
+    def get_updated_by(self, obj):
+        return obj.updated_by.full_name if obj.updated_by else None
+
 
 ################### ARTICLE ######################
 class ArticleSerializer(serializers.ModelSerializer):

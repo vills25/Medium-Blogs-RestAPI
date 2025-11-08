@@ -44,6 +44,7 @@ urlpatterns = [
     path('edit-topic/', edit_topic),
     path('delete-topic/', delete_topic),
     path('view-all-topics/', view_all_topics),
+    path('view-topic/', view_specific_topic),
     path('search-topics/', search_topics),
 
     #-------- PUBLICATIONS --------#

@@ -23,26 +23,11 @@ def create_readinglist(request):
     Parameters:
     article_id (int): article_id
     visibility (string): visibility of the reading list
-
-    Response:
-    {
-        "status": "success",
-        "message": "Readinglist created",
-        "data": {
-            "reading_list_id": "integer",
-            "article_id": "integer",
-            "article_title": "string",
-            "article_category": "string",
-            "visibility": "string",
-            "created_at": "datetime",
-            "updated_at": "datetime",
-            "created_by": "integer",
-            "updated_by": "integer"
-        }
-    }
     """
     article_id = request.data.get('article_id')
     visibility = request.data.get('visibility', 'public')
+
+    logger.info(f"Create readinglist attempt by user: {request.user.username} with article_id: {article_id} and visibility: {visibility}")
 
     if not article_id:
             return Response({"status": "error", "message": "article_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -51,6 +36,7 @@ def create_readinglist(request):
         article = Article.objects.get(article_id = article_id)
 
         if ReadingList.objects.filter(user=request.user, article=article).exists():
+            logger.warning(f"User {request.user.username} already has this article in their reading list")
             return Response({"status": "fail","message": "This article is already in your reading list"}, status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
@@ -67,29 +53,37 @@ def create_readinglist(request):
             ## count total articles in readinglist
             ReadingList.objects.filter(user=request.user).update(total_articles_in_lists_count=F('total_articles_in_lists_count') + 1)
 
+            logger.success(f"Readinglist created by user: {request.user.username} with article_id: {article_id} and visibility: {visibility}")
         serializer = ReadingListSerializer(readinglist, context={'request': request})
         return Response({"status": "success", "message": "Readinglist created", "data": serializer.data}, status=status.HTTP_200_OK)
     
     except Article.DoesNotExist:
+        logger.warning(f"Article not found: {article_id}")
         return Response({"status": "error", "message": "Article not found"}, status=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
+        logger.error(f"Error creating readinglist: {e}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## Get readinglist
 @api_view(['GET'])
 @permission_classes([IsAuthenticatedCustom])
 def get_readinglist(request):
+
+    logger.info(f"Get readinglist request by user: {request.user.username}")
     try:
         readinglist = ReadingList.objects.filter(user = request.user).all().order_by('-created_at')
         serializer = ReadingListSerializer(readinglist, many=True, context={'request': request})
-
-        if not readinglist:
-            return Response({"status": "error", "message": "Readinglist not found"}, status=status.HTTP_404_NOT_FOUND)
         
+        logger.success(f"Readinglist found for user: {request.user.username}")
         return Response({"status": "success", "message": "Readinglist found", "data": serializer.data}, status=status.HTTP_200_OK)
     
+    except ReadingList.DoesNotExist:
+        logger.warning(f"Readinglist not found for user: {request.user.username}")
+        return Response({"status": "error", "message": "Readinglist not found"}, status=status.HTTP_404_NOT_FOUND)
+    
     except Exception as e:
+        logger.error(f"Error getting readinglist: {e}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## Edit readinglist
@@ -103,6 +97,8 @@ def edit_readinglist(request):
     if not readinglist_id:
         return Response({"status": "error", "message": "readinglist_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+    logger.info(f"Edit readinglist attempt by user: {request.user.username} with readinglist_id: {readinglist_id} and visibility: {visibility}")
+
     try:
         with transaction.atomic():
             readinglist = ReadingList.objects.get(readinglist_id = readinglist_id)
@@ -112,13 +108,17 @@ def edit_readinglist(request):
             readinglist.updated_by = request.user
             readinglist.save()
 
+            logger.success(f"Readinglist updated by user: {request.user.username} with readinglist_id: {readinglist_id} and visibility: {visibility}")
+
         serializer = ReadingListSerializer(readinglist, context={'request': request})
         return Response({"status": "success", "message": "Readinglist updated", "data": serializer.data}, status=status.HTTP_200_OK)
     
     except ReadingList.DoesNotExist:
+        logger.warning(f"Readinglist not found: {readinglist_id}")
         return Response({"status": "error", "message": "Readinglist not found"}, status=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
+        logger.error(f"Error updating readinglist: {e}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## Delete readinglist
@@ -133,17 +133,13 @@ def delete_readinglist(request):
     {
         "readinglist_id": 12
     }
-
-    Response:
-    {
-        "status": "success",
-        "message": "Readinglist deleted"
-    }
     """
     readinglist_id = request.data.get('readinglist_id')
 
     if not readinglist_id:
         return Response({"status": "error", "message": "readinglist_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    logger.info(f"Delete readinglist attempt by user: {request.user.username} with readinglist_id: {readinglist_id}")
 
     try:
         with transaction.atomic():
@@ -151,14 +147,18 @@ def delete_readinglist(request):
 
             readinglist.delete()
 
+            logger.success(f"Readinglist deleted by user: {request.user.username} with readinglist_id: {readinglist_id}")
+
             ReadingList.objects.filter(user=request.user).update(total_articles_in_lists_count=F('total_articles_in_lists_count') - 1)
 
         return Response({"status": "success", "message": "Readinglist deleted"}, status=status.HTTP_200_OK)
     
     except ReadingList.DoesNotExist:
+        logger.warning(f"Readinglist not found: {readinglist_id}")
         return Response({"status": "error", "message": "Readinglist not found"}, status=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
+        logger.error(f"Error deleting readinglist: {e}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## Add Multiple Articles to Reading List
@@ -179,7 +179,9 @@ def add_multiple_to_readinglist(request):
 
     if not article_ids:
         return Response({"status": "error","message": "article_ids is required"}, status=status.HTTP_400_BAD_REQUEST)
-    
+
+    logger.info(f"Add multiple articles to readinglist attempt by user: {request.user.username} with article_ids: {article_ids} and visibility: {visibility}")
+
     try:
 
         try:
@@ -193,6 +195,7 @@ def add_multiple_to_readinglist(request):
             else:
                 article_ids = [int(a) for a in article_ids]
         except Exception:
+            logger.error(f"Invalid article_ids format: {article_ids}")
             return Response({"status": "error","message": "Invalid article_ids format"}, status=status.HTTP_400_BAD_REQUEST)
 
         added_count = 0
@@ -221,15 +224,17 @@ def add_multiple_to_readinglist(request):
                     continue
 
             total_articles = ReadingList.objects.filter(user=request.user).count()
-
+        logger.success(f"Multiple articles added to readinglist by user: {request.user.username} with article_ids: {article_ids} and visibility: {visibility}")
         return Response({
             "status": "success","message": f"{added_count} articles added to reading list","data": {"added_count": added_count,"skipped_count": skipped_count,
                                          "total_articles_in_list": total_articles}}, status=status.HTTP_200_OK)
 
     except Article.DoesNotExist:
+        logger.warning(f"Article not found: {article_ids}")
         return Response({"status": "error","message": "Article not found"}, status=status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
+        logger.error(f"Error adding multiple articles to readinglist: {e}")
         return Response({"status": "error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## Clear Reading List
@@ -238,22 +243,14 @@ def add_multiple_to_readinglist(request):
 def clear_readinglist(request):
     """
     Clear entire reading list.
-
-    Response:
-    {
-        "status": "success",
-        "message": "Reading list cleared successfully",
-        "data": {
-            "deleted_count": 12,
-            "total_articles_removed": 12
-        }
-    }
     """
     user = request.user
     get_reading_list_id = request.data.get('readinglist_id')
 
     if not get_reading_list_id:
         return Response({"status": "error", "message": "readinglist_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    logger.info(f"Clear readinglist attempt by user: {request.user.username} with readinglist_id: {get_reading_list_id}")
 
     try:
         with transaction.atomic():
@@ -262,15 +259,19 @@ def clear_readinglist(request):
             delete_readinglist = ReadingList.objects.filter(user=user)
             delete_readinglist.delete()
 
-            if not delete_readinglist:
-                return Response({"status": "error", "message": "Reading list not found"}, status=status.HTTP_404_NOT_FOUND)
+            logger.success(f"Readinglist cleared by user: {request.user.username} with readinglist_id: {get_reading_list_id}")
 
             ReadingList.objects.filter(user=user).update(total_articles_in_lists_count=F('total_articles_in_lists_count') - deleted_count)
 
         return Response({"status": "success","message": "Reading list cleared successfully","data": {"deleted_count": deleted_count,"total_articles_removed": deleted_count}
                             }, status=status.HTTP_200_OK)
 
+    except ReadingList.DoesNotExist:
+        logger.warning(f"Readinglist not found: {get_reading_list_id}")
+        return Response({"status": "error", "message": "Readinglist not found"}, status=status.HTTP_404_NOT_FOUND)
+
     except Exception as e:
+        logger.error(f"Error clearing readinglist: {e}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## Search in Reading List
@@ -284,30 +285,14 @@ def search_readinglist(request):
     {
         "search_text": "python"
     }
-
-    Response:
-    {
-        "status": "success",
-        "message": "Search results found",
-        "data": [
-            {
-                "reading_list_id": 8,
-                "article_id": 25,
-                "article_title": "Introduction to Python Programming",
-                "article_category": "Programming",
-                "visibility": "public",
-                "created_at": "2024-01-15T10:30:00Z",
-                "updated_at": "2024-01-15T10:30:00Z",
-                "match_reason": "Title contains 'python'"
-            }
-        ]
-    }
     """
     user = request.user
     search_text = request.data.get('search_text')
 
     if not search_text:
         return Response({"status": "error", "message": "search_text is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    logger.info(f"Search readinglist attempt by user: {request.user.username} with search_text: {search_text}")
 
     try:
 
@@ -344,6 +329,7 @@ def search_readinglist(request):
         return Response({"status": "success","message": "Search results found","data": search_results}, status=status.HTTP_200_OK)
 
     except Exception as e:
+        logger.error(f"Error searching readinglist: {e}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## Get Reading List Stats
@@ -352,29 +338,10 @@ def search_readinglist(request):
 def get_readinglist_stats(request):
     """
     Get reading list statistics.
-
-    Response:
-    {
-        "status": "success",
-        "message": "Reading list stats fetched",
-        "data": {
-            "total_articles": 15,
-            "public_articles": 10,
-            "private_articles": 5,
-            "total_read_time": 125,
-            "categories": {
-                "Programming": 6,
-                "Web Development": 4,
-                "Data Science": 3,
-                "Design": 2
-            },
-            "last_added": "2024-01-15T10:30:00Z"
-        }
-    }
     """
     
     get_user = request.user
-    
+    logger.info(f"Get readinglist stats attempt by user: {request.user.username}")
     try:
         reading_list_items = ReadingList.objects.filter(user=get_user).select_related('article')
         
@@ -404,6 +371,7 @@ def get_readinglist_stats(request):
         }
 
         return Response({"status": "success", "message": "Reading list stats fetched","data": stats_data}, status=status.HTTP_200_OK)
-
+    
     except Exception as e:
+        logger.error(f"Error getting readinglist stats: {e}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

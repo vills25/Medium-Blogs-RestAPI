@@ -155,11 +155,46 @@ def view_all_topics(request):
     try:
         logger.info(f"Viewing all topics - User: {request.user.user_id}")
         topics = Topics.objects.all()
+        count_length = len(topics)
         serializer = TopicsSerializer(topics, many=True, context={'request': request})
         logger.info(f"Successfully fetched {len(topics)} topics")
-        return Response({"status": "success", "message": "Topics fetched successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"status": "success", "message": "Topics fetched successfully","total_results": count_length ,"data": serializer.data}, status=status.HTTP_200_OK)
+    
     except Exception as e:
         logger.error(f"Error viewing all topics: {str(e)}")
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+## view specific topic
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def view_specific_topic(request):
+
+    """
+    View specific topic.
+
+    Request Body:
+    {
+        "topic_id": "integer"
+    }
+    """
+    topic_id = request.data.get('topic_id')
+    if not topic_id:
+        logger.warning("Topic view failed - topic_id is required")
+        return Response({"status": "error", "message": "topic_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        logger.info(f"Viewing topic - Topic ID: {topic_id} - User: {request.user.user_id}")
+        topic = Topics.objects.get(topic_id = topic_id)
+        serializer = TopicsSerializer(topic, context={'request': request})
+        logger.info(f"Successfully fetched topic - Topic ID: {topic.topic_id}")
+        return Response({"status": "success", "message": "Topic found", "data": serializer.data}, status=status.HTTP_200_OK)
+    
+    except Topics.DoesNotExist:
+        return Response({"status": "error", "message": "topic not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        logger.error(f"Error viewing topic: {str(e)}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## search topics

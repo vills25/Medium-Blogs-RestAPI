@@ -9,7 +9,6 @@ from loguru import logger
 # Custom JWT configure
 class CustomJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
-        logger.debug(f"Authentication attempt for path: {request.path}")
         
         header = self.get_header(request)
         if header is None:
@@ -89,7 +88,6 @@ class IsAuthenticatedCustom(BasePermission):
     Custom permission class that works with your User model
     """
     def has_permission(self, request, view):
-        logger.debug(f"Checking IsAuthenticatedCustom permission for {request.path}")
         
         if not (request.user and hasattr(request.user, 'user_id')):
             logger.warning("Permission denied - No user or user_id")
@@ -121,7 +119,6 @@ class IsAdminCustom(BasePermission):
     Allows access only to admin users.
     """
     def has_permission(self, request, view):
-        logger.debug(f"Checking IsAdminCustom permission for {request.path}")
         
         # token check
         validate_token_not_blacklisted(request)
@@ -146,7 +143,6 @@ class IsMemberUser(BasePermission):
     message = "You must be a member to access this content."
 
     def has_permission(self, request, view):
-        logger.debug(f"Checking IsMemberUser permission for {request.path}")
         
         is_member = request.user and request.user.is_authenticated and request.user.is_member
         
@@ -157,7 +153,6 @@ class IsMemberUser(BasePermission):
         return is_member
 
     def has_object_permission(self, request, view, obj):
-        logger.debug(f"Checking object-level member permission for {type(obj).__name__}")
         
         # Check object level: member-only article
         if hasattr(obj, 'is_member_only') and obj.is_member_only:

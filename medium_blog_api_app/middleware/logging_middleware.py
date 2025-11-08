@@ -8,18 +8,14 @@ class RequestLoggingMiddleware:
     def __call__(self, request):
         start_time = time.time()
         
-        # Log request
-        logger.bind(API_REQUEST=True).info(
-            f"🌐 {request.method} {request.path} - User: {getattr(request.user, 'username', 'Anonymous')}"
-        )
+        logger.bind(API_REQUEST=True).info(f"🌐 {request.method} {request.path} - RequestLoggingMiddleware Incoming request")
 
         response = self.get_response(request)
-
         duration = time.time() - start_time
         
-        # Log response
-        logger.bind(API_REQUEST=True).info(
-            f"📡 {request.method} {request.path} - Status: {response.status_code} - Duration: {duration:.2f}s"
-        )
+        username = getattr(request.user, 'username', 'Anonymous')
+
+        # Log response with username
+        logger.bind(API_REQUEST=True).info(f"📡 {request.method} {request.path} - User: {username} - "f"Status: {response.status_code} - Duration: {duration:.2f}s")
 
         return response

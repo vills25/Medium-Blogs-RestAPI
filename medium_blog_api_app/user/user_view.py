@@ -125,22 +125,6 @@ def login_user(request):
     Parameters:
     username/email/phone_number: str
     password: str
-    
-    Response:
-    {
-    "status": "success",
-    "message": "Login successful",
-    "data": {
-        "User": {
-            "username": "@arjav2",
-            "email": "arjav@gmail.com",
-            "full_name": "Arjav Patel"
-        },
-        "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzYyMzIwNzU5LCJpYXQiOjE3NjIyMzQzNTksImp0aSI6IjY2NTZiYWMyYjVjNzQxOT
-                         E5MzY4NDA4YWY2MWI2Nzk2IiwidXNlcl9pZCI6MywidXNlcm5hbWUiOiJAYXJqYXYyIn0.lgUh12WlHqvtOyHgGbfBmDZkeNtBh7YWjhcplhcH4eI"
-    }
-}
-
     """
     username = request.data.get("username/email/phone_number")
     password = request.data.get("password")

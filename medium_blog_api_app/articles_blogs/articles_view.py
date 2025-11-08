@@ -375,13 +375,14 @@ def get_my_articles(request):
 
     try:
         articles = Article.objects.filter(author=request.user).order_by('-published_at').all()
+        total_articles = articles.count()
 
         if not articles.exists():
             return Response({"status": "success", "message": "No articles found."},status=status.HTTP_404_NOT_FOUND)
 
         serializer = ArticleListSerializer(articles, many=True, context={'request': request})
         logger.success(f"Retrieved articles for user: {request.user.username}")
-        return Response({"status":"success","message":"Articles found", "results": serializer.data}, status=status.HTTP_200_OK)
+        return Response({"status":"success","message":"Articles found","total_articles": total_articles ,"results": serializer.data}, status=status.HTTP_200_OK)
 
     except Exception as e:
         logger.error(f"My articles error: {str(e)}")
@@ -427,6 +428,7 @@ def get_all_articles(request):
 
     try:
         articles = Article.objects.filter(is_reported=False, show_less_like_this = False).order_by('-published_at').all()
+        count_articles = articles.count()
 
         if not articles.exists():
             logger.info("No articles found in system")
@@ -467,7 +469,7 @@ def get_all_articles(request):
                 "total_shared": article.share_count
             })
         logger.success(f"Dashboard data of {user_info}: {article.article_id}")
-        return Response({"status": "success","message": "Articles fetched","results": custom_data}, status=status.HTTP_200_OK)
+        return Response({"status": "success","message": "Articles fetched","total_articles_fetched": count_articles,"results": custom_data}, status=status.HTTP_200_OK)
 
     except Exception as e:
         logger.error(f"All articles error: {str(e)}")
