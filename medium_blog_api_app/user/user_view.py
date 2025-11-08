@@ -148,7 +148,6 @@ def login_user(request):
         user_data = {"username": user.username, "email": user.email, "full_name": user.full_name}
         
         if user:
-
             refresh = RefreshToken()
             refresh['user_id'] = user.user_id
             refresh['username'] = user.username
@@ -710,21 +709,6 @@ def view_other_user_profile(request):
     View other user profile
     Parameters:
     - user_id: int (user_id of the user whose profile is to be viewed)
-    Response:
-    {
-        "status": "success",
-        "message": "Profile fetched successfully",
-        "data": {
-            "user_id": "int",
-            "username": "string",
-            "email": "string",
-            "full_name": "string",
-            "contact_number": "string",
-            "bio": "string",
-            "profile_pic": "string",
-            "followers_count": "int"
-        }
-    }
     """
 
     get_userid = request.data.get('user_id')
@@ -813,4 +797,3 @@ def view_my_following_list(request):
     except Exception as e:
         logger.error(f"View my following list error for user: {request.user.username}: {str(e)}")
         return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
-    
