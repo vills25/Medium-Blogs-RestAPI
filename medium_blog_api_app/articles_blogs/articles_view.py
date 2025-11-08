@@ -12,6 +12,7 @@ from django.db.models import Q
 import json
 from rest_framework.permissions import AllowAny
 from loguru import logger
+from django.db.models import Sum
 
 ## Create articles
 @api_view(['POST'])
@@ -785,3 +786,35 @@ def get_shared_articles(request):
     except Exception as e:
         logger.error(f"Get shared articles error: {str(e)}")
         return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+## GET articles stats
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedCustom])
+def get_articles_stats(request):
+    logger.info(f"Articles stats requested by user: {request.user.username}")
+    
+    try:
+        total_articles = Article.objects.count()
+        shared_articles_qs = Article.objects.filter(shared_from__isnull=False)
+        shared_count = shared_articles_qs.count()
+        total_read_time = shared_articles_qs.aggregate(total_read_time=Sum('read_time'))['total_read_time'] or 0
+
+        stats_data = {
+            "total_articles": total_articles,
+            "shared_articles": shared_count,
+            "total_read_time": total_read_time
+        }
+
+        if shared_count == 0:
+            logger.info("No shared articles found.")
+            return Response({"status": "success","message": "No shared articles found.","stats": stats_data,"results": []}, status=status.HTTP_200_OK)
+
+        shared_articles = shared_articles_qs.order_by('-published_at')
+        serializer = ArticleFeedSerializer(shared_articles, many=True, context={'request': request})
+
+        logger.success(f"Fetched {shared_count} shared articles successfully.")
+        return Response({"status": "success","message": "Articles fetched successfully.","stats": stats_data,"results": serializer.data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error fetching article stats: {str(e)}")
+        return Response({"status": "error","message": "Failed to fetch article stats.","error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

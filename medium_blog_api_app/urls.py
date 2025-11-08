@@ -38,6 +38,7 @@ urlpatterns = [
     path('mute-author/', mute_author),
     path('mute-publication/', mute_publication),
     path('show-less/', show_less_like_this_func),
+    path('get-articles-stats/', get_articles_stats),
     
     #-------- TOPICS --------#
     path('create-topic/', create_topic),
