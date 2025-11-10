@@ -17,5 +17,6 @@ class RequestLoggingMiddleware:
 
         # Log response with username
         logger.bind(API_REQUEST=True).info(f"📡 {request.method} {request.path} - User: {username} - "f"Status: {response.status_code} - Duration: {duration:.2f}s")
+        logger.bind(API_REQUEST=True).info("")
 
         return response

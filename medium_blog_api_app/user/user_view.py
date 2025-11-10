@@ -786,9 +786,129 @@ def view_my_following_list(request):
             for p in following_publications
         ]
 
+        following_topics = Topics.objects.filter(followers=user)
+        topics_data = [{
+            "topic_id": t.topic_id,
+            "topic_header_1": t.topic_header_1,
+            "topic_header_2": t.topic_header_2,
+            "topic_header_3": t.topic_header_3
+
+        } for t in following_topics]
+
         logger.success(f"View my following list success for user: {request.user.username}")
-        return Response({"status": "success","message": "Following list fetched","results": {"users": users_data,"publications": publications_data}},status=status.HTTP_200_OK)
-                                
+        return Response({"status": "success","message": "Following list fetched","results": {"users": users_data,"publications": publications_data, "topics": topics_data}},status=status.HTTP_200_OK)
+
     except Exception as e:
         logger.error(f"View my following list error for user: {request.user.username}: {str(e)}")
         return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+
+## all search
+@api_view(['POST'])
+@permission_classes([IsAuthenticatedCustom])
+def all_search(request):
+    
+    """
+    Search for users, articles, publications, topics and Public readinglists.
+    Parameters:
+    - search_term: string (the term to search for)
+    """
+    user = request.user
+    enter_search_text = request.data.get('enter_search_text')
+    logger.info(f"Search for users, publications, and topics by user: {user.username}")
+
+    if not enter_search_text:
+        return Response({"status":"fail","message":"enter_search_text is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+#-------- users_data --------#
+        users = User.objects.filter(Q(full_name__icontains = enter_search_text) |
+                                    Q(username__icontains=enter_search_text))
+
+        users_data = []
+        for u in users:
+            users_data.append({
+                "user_id": u.user_id,
+                "username": u.username,
+                "full_name": u.full_name,
+                "profile_pic": request.build_absolute_uri(u.profile_pic.url) if u.profile_pic else None
+            })
+        if not users_data:
+            users_data = [{"message": "No users found"}]
+
+#-------- articles_data --------#        
+        articles = Article.objects.filter(Q(article_title__icontains = enter_search_text) |
+                                          Q(article_subtitle__icontains = enter_search_text) |
+                                          Q(article_content__icontains = enter_search_text))
+
+        articles_data = []
+        for a in articles:
+            articles_data.append({
+                "article_id": a.article_id,
+                "article_title": a.article_title,
+                "article_subtitle": a.article_subtitle,
+                "article_content": a.article_content,
+                "article_image": request.build_absolute_uri(a.image.url) if a.image else None,
+                "author": a.author.username
+            })
+        if not articles_data:
+            articles_data = [{"message": "No articles found"}]
+
+#-------- publications_data --------#
+        publications = Publication.objects.filter(Q(publication_title__icontains = enter_search_text))
+
+        publications_data = []
+        for p in publications:
+            publications_data.append({
+                "publication_id": p.publication_id,
+                "publication_title": p.publication_title,
+                "logo_image": request.build_absolute_uri(p.logo_image.url) if p.logo_image else None,
+                "owner": p.owner.username
+            })
+        if not publications_data:
+            publications_data = [{"message": "No publications found"}]
+
+#-------- topics_data --------#
+        topics = Topics.objects.filter(Q(topic_header_1__icontains = enter_search_text) |
+                                       Q(topic_header_2__icontains = enter_search_text) |
+                                       Q(topic_header_3__icontains = enter_search_text) |
+                                       Q(topic_description__icontains = enter_search_text))
+
+        topics_data = []
+        for t in topics:
+            topics_data.append({
+                "topic_id": t.topic_id,
+                "topic_header_1": t.topic_header_1,
+                "topic_header_2": t.topic_header_2,
+                "topic_header_3": t.topic_header_3
+            })
+        if not topics_data:
+            topics_data = [{"message": "No topics found"}]
+
+#-------- reading_lists_data --------#
+        reading_lists = ReadingList.objects.filter(Q(readinglist_title__icontains = enter_search_text, visibility="public"))
+
+        reading_lists_data = []
+        for r in reading_lists:
+            reading_lists_data.append({
+                "reading_list_id": r.reading_list_id,
+                "reading_list_title": r.readinglist_title,
+                "visibility": r.visibility,
+                "user": r.user.username
+            })
+        if not reading_lists_data:
+            reading_lists_data = [{"message": "No reading lists found"}]
+
+##  RESPONSE  ##
+        logger.success(f"Search for users, publications, and topics success for user: {user.username}")
+        return Response({"status": "success","message": "Search results fetched","results": {
+                                    "users": users_data,
+                                    "articles": articles_data,
+                                    "publications": publications_data, 
+                                    "topics": topics_data, 
+                                    "reading_lists": reading_lists_data, 
+                                    }},status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Search for users, publications, and topics error for user: {user.username}: {str(e)}")
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+

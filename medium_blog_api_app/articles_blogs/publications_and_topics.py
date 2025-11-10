@@ -291,6 +291,7 @@ def create_publication(request):
         logger.info(f"Publication created successfully - Publication ID: {publication.publication_id}")
         serializer = PublicationSerializer(publication, context={'request': request})
         return Response({"status": "success", "message": "Publication created", "data": serializer.data}, status=status.HTTP_200_OK)
+    
     except Exception as e:
         logger.error(f"Error creating publication: {str(e)}")
         return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

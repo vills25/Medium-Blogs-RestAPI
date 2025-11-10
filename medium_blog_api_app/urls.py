@@ -22,6 +22,7 @@ urlpatterns = [
     path('view_my_profile/', view_my_profile),
     path('get-any-users/', view_other_user_profile),
     path('get-my-following-list/', view_my_following_list),
+    path('all-search/', all_search),
 
     #-------- ARTICLES --------#
     path('new-story/', create_article),
