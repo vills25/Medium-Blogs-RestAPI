@@ -58,29 +58,25 @@ def register_user(request):
     enter_bio = request.data.get('bio')
     enter_gender = request.data.get('gender')
     enter_profile_pic = request.FILES.get('profile_pic')
-
-    logger.debug(f"Registration data - Username: {enter_username}, Email: {enter_email}, Contact: {enter_contact_number}")
-
-    if enter_profile_pic:
-        try:
-            validate_image(enter_profile_pic)
-            logger.debug("Profile picture validation passed")
-        except ValidationError as e:
-            logger.warning(f"Profile picture validation failed: {str(e)}")
-            return Response({"status":"fail","message":str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-    if not request.data.get("username") or not request.data.get("email") or not request.data.get("password") or not request.data.get("confirm_password"):
-        logger.warning("Registration failed - Missing required fields")
-        return Response({"status":"fail","message":"username, email, password required"}, status=status.HTTP_400_BAD_REQUEST)
-
     raw_password = request.data.get("password")
     enter_confirm_password = request.data.get("confirm_password")
+
+    if not enter_username or not enter_email or not raw_password or not enter_confirm_password:
+        logger.warning("Registration failed - Missing required fields")
+        return Response({"status":"fail","message":"username, email, password required"}, status=status.HTTP_400_BAD_REQUEST)
 
     if raw_password != enter_confirm_password:
         logger.warning("Registration failed - Password mismatch")
         return Response({"status":"fail","message":"Password and confirm password do not match"}, status=status.HTTP_400_BAD_REQUEST)
 
     enter_password = make_password(raw_password)
+
+    if enter_profile_pic:
+        try:
+            validate_image(enter_profile_pic)
+        except ValidationError as e:
+            logger.warning(f"Profile picture validation failed: {str(e)}")
+            return Response({"status":"fail","message":str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     if User.objects.filter(username=request.data["username"]).exists():
         logger.warning(f"Registration failed - Username already exists: {enter_username}")
@@ -96,7 +92,6 @@ def register_user(request):
 
     try:
         with transaction.atomic():
-            logger.debug("Starting user creation transaction")
             user = User.objects.create(
                 username = enter_username,
                 full_name = enter_fullname,
@@ -719,7 +714,7 @@ def view_other_user_profile(request):
         return Response({"status":"error","message":"user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        user = User.objects.get(user_id=get_userid)
+        user = User.objects.get(user_id = get_userid)
         serializer = UserProfileSerializer(user, context={'request': request})
 
         logger.success(f"View other user profile success for user: {request.user.username}")

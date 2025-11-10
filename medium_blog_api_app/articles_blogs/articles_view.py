@@ -729,14 +729,13 @@ def undo_reshare(request):
     Parameters:
     article_id (int): article_id
     undo_reshare (bool): undo_reshare
-
     }
     """
 
     logger.info(f"Undo reshare attempt by user: {request.user.username}")
     get_article_id = request.data.get('article_id')
     undo_reshare = request.data.get('undo_reshare')
-
+ 
     if not get_article_id:
         logger.warning("Undo reshare failed - article_id required")
         return Response({"status":"error","message":"article_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -757,6 +756,10 @@ def undo_reshare(request):
         logger.success(f"Undo reshare turned {action} for article: {article.article_title}")
         return Response({"status":"success","message":f"Undo reshare turned {'on' if article.allow_to_share_article else 'off'}"}, status=status.HTTP_200_OK)
 
+    except Article.DoesNotExist:
+        logger.warning(f"Article not found for resharing: {get_article_id}")
+        return Response({"status":"error","message":"article id forr undo-reshare not found"}, status=status.HTTP_404_NOT_FOUND)
+
     except Exception as e:
         logger.error(f"Undo reshare error: {str(e)}")
         return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -765,7 +768,7 @@ def undo_reshare(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticatedCustom])
 def get_shared_articles(request):
-    
+
     """
     Get all shared articles.
     """
@@ -773,15 +776,15 @@ def get_shared_articles(request):
     try:
         articles = Article.objects.filter(shared_from__isnull=False).order_by('-published_at').all()
 
-        if not articles.exists():
-            logger.info("No shared articles found")
-            return Response({"status": "success", "message": "No articles found."},status=status.HTTP_404_NOT_FOUND)
-
         shared_count = articles.count()
         logger.success(f"Fetched {shared_count} shared articles")
 
         serializer = ArticleFeedSerializer(articles, many=True, context={'request': request})
         return Response({"status":"success","message":"Articles found", "results": serializer.data}, status=status.HTTP_200_OK)
+    
+    except Article.DoesNotExist:
+        logger.warning("No shared articles found")
+        return Response({"status":"fail", "message":"No shared articles found"}, status= status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
         logger.error(f"Get shared articles error: {str(e)}")
@@ -793,39 +796,6 @@ def get_shared_articles(request):
 def get_articles_stats(request):
     """
     Get stats of articles.
-
-    Response:
-    {
-        "status": "success",
-        "message": "Articles fetched successfully",
-        "stats": {
-            "total_articles": integer,
-            "shared_articles": integer,
-            "total_read_time": integer,
-        },
-        "results": [
-            {
-                "article_id": integer,
-                "article_title": string,
-                "article_subtitle": string,
-                "article_content": string,
-                "article_category": string,
-                "url": string,
-                "video": string,
-                "code_block": string,
-                "is_member_only": boolean,
-                "allow_to_share_article": boolean,
-                "image": string,
-                "created_at": datetime,
-                "updated_at": datetime,
-                "created_by": string,
-                "updated_by": string,
-                "published_at": datetime,
-                "published_by": string,
-                "clap_count": integer,
-            }
-        ]
-    }
     """
     logger.info(f"Articles stats requested by user: {request.user.username}")
     
@@ -850,6 +820,10 @@ def get_articles_stats(request):
 
         logger.success(f"Fetched {shared_count} shared articles successfully.")
         return Response({"status": "success","message": "Articles fetched successfully.","stats": stats_data,"results": serializer.data}, status=status.HTTP_200_OK)
+
+    except Article.DoesNotExist:
+        logger.warning("No articles found")
+        return Response({"status":"Fail", "message":"No articles found."}, status = status.HTTP_404_NOT_FOUND)
 
     except Exception as e:
         logger.error(f"Error fetching article stats: {str(e)}")
