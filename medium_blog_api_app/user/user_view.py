@@ -804,13 +804,64 @@ def view_my_following_list(request):
 
 ## all search
 @api_view(['POST'])
-@permission_classes([IsAuthenticatedCustom])
+@permission_classes([AllowAny])
 def all_search(request):
     
     """
-    Search for users, articles, publications, topics and Public readinglists.
+    Search for users, publications, and topics
+
     Parameters:
-    - search_term: string (the term to search for)
+    enter_search_text (str): Text to search for users, publications, and topics
+
+    Response:
+    {
+        "status": "success",
+        "message": "Search results fetched",
+        "results": {
+            "users": [
+                {
+                    "user_id": "int",
+                    "username": "string",
+                    "full_name": "string",
+                    "profile_pic": "string"
+                }
+            ],
+            "articles": [
+                {
+                    "article_id": "int",
+                    "article_title": "string",
+                    "article_subtitle": "string",
+                    "article_content": "string",
+                    "article_image": "string",
+                    "author": "string"
+                }
+            ],
+            "publications": [
+                {
+                    "publication_id": "int",
+                    "publication_title": "string",
+                    "logo_image": "string",
+                    "owner": "string"
+                }
+            ],
+            "topics": [
+                {
+                    "topic_id": "int",
+                    "topic_header_1": "string",
+                    "topic_header_2": "string",
+                    "topic_header_3": "string"
+                }
+            ],
+            "reading_lists": [
+                {
+                    "reading_list_id": "int",
+                    "reading_list_title": "string",
+                    "visibility": "string",
+                    "user": "string"
+                }
+            ]
+        }
+    }
     """
     user = request.user
     enter_search_text = request.data.get('enter_search_text')
