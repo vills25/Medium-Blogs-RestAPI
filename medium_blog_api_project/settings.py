@@ -27,8 +27,7 @@ SECRET_KEY = 'django-insecure-($!x0_-yl-0ub3e4$t94)oofe(x983!1m1_i@80xd7l=redw1k
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['medium-blogs-restapi.onrender.com']
 
 # Application definition
 
