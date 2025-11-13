@@ -66,7 +66,7 @@ class Article(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='updated_articles', null=True)
     clap_count = models.PositiveIntegerField(default=0)
-    # clapped_by = models.ManyToManyField(User, related_name='clapped_articles', blank=True)
+    clapped_by = models.ManyToManyField(User, related_name='clapped_articles', blank=True)
     comment_count = models.PositiveIntegerField(default=0)
     is_saved = models.BooleanField(default=False)
     is_reported = models.BooleanField(default=False)
@@ -103,7 +103,8 @@ class ReadingList(models.Model):
     updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='updated_reading_lists',null=True)
 
     def __str__(self):
-        return self.article
+        return self.readinglist_title
+
 
 ## Topics model
 class Topics(models.Model):
@@ -136,7 +137,7 @@ class StaffPics(models.Model):
     updated_by = models.ForeignKey(User, on_delete=models.SET_NULL,related_name='updated_staff_pics', null=True)
 
     def __str__(self):
-        return self.article
+        return f"Staff Pick: {self.article.article_title}"
 
 class ArticlePublicationTopic(models.Model):
     apt_id = models.AutoField(primary_key=True)

@@ -9,17 +9,109 @@ from medium_blog_api_app.utils import *
 from rest_framework import status
 from django.db import transaction
 from django.db.models import Q
-import json
 from rest_framework.permissions import AllowAny
 from loguru import logger
 from django.db.models import Sum
+from django.db.models import F
+
 
 ## Create articles
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticatedCustom])
+# def create_article(request):
+#     """
+#     Create an article.
+#     """
+#     logger.info(f" Article creation attempt by user: {request.user.username}")
+
+#     get_title = request.data.get('article_title')
+#     get_content = request.data.get('article_content')
+#     get_subtitle = request.data.get('article_subtitle')
+#     get_category = request.data.get('article_category')
+#     get_publication_id = request.data.get('publication_id')
+#     get_url = request.data.get('url')
+#     get_img = request.FILES.get('image')
+#     get_video = request.data.get('video')
+#     get_code_block = request.data.get('code_block')
+#     get_is_member_only = request.data.get('is_member_only', False)
+#     get_allow_to_share_article = request.data.get('allow_to_share_article', False)
+#     get_topic_ids = request.data.get('topics', [])
+
+#     logger.debug(f"Article data - Title: {get_title}, Category: {get_category}, Publication: {get_publication_id}")
+
+#     try:
+#         if str(get_topic_ids).strip().startswith('['):
+#             get_topic_ids = json.loads(get_topic_ids)
+
+#         elif ',' in str(get_topic_ids):
+#             get_topic_ids = [t.strip() for t in str(get_topic_ids).split(',') if t.strip()]
+
+#         elif get_topic_ids:
+#             get_topic_ids = [str(get_topic_ids).strip()]
+#         else:
+#             get_topic_ids = []
+#     except:
+#         get_topic_ids = [str(get_topic_ids).strip()] if get_topic_ids else []
+
+#     if not get_title or not get_content:
+#         logger.warning("Article creation failed - Missing title or content")
+#         return Response({"status": "fail", "message": "article_title and article_content are required"},status=status.HTTP_400_BAD_REQUEST)
+
+#     if get_img:
+#         validate_image(get_img)
+
+#     read_time = estimate_read_time(get_content)
+
+#     try:
+#         with transaction.atomic():
+#             publication = None
+#             if get_publication_id:
+#                 publication = Publication.objects.filter(publication_id=get_publication_id).first()
+#                 if not publication:
+#                     logger.warning(f"Publication not found: {get_publication_id}")
+#                     return Response({"status": "error", "message": "publication not found"},status=status.HTTP_404_NOT_FOUND)
+
+#             article = Article.objects.create(
+#                                             publication = publication,
+#                                             author = request.user,
+#                                             article_title = get_title,
+#                                             article_subtitle = get_subtitle,
+#                                             article_content = get_content,
+#                                             article_category = get_category,
+#                                             url = get_url,
+#                                             image = get_img,
+#                                             video = get_video,
+#                                             code_block = get_code_block,
+#                                             read_time = read_time,
+#                                             is_member_only = get_is_member_only,
+#                                             allow_to_share_article = get_allow_to_share_article,
+#                                             published_by = request.user,
+#                                             updated_by = request.user
+#                                         )
+
+#             # --- Topic creation ---
+#             for topic_name in get_topic_ids:
+#                 topic_name = str(topic_name).strip()
+#                 if not topic_name:
+#                     continue
+#                 topic_obj, created = Topics.objects.get_or_create(topic_header_1 = topic_name)
+#                 ArticlePublicationTopic.objects.create(topic = topic_obj, article = article)
+#                 topic_obj.total_stories = topic_obj.total_stories + 1
+#                 topic_obj.save()
+
+#             logger.success(f"Article created successfully: {get_title} (ID: {article.article_id})")
+#             serializer = ArticleDetailSerializer(article, context={'request': request})
+#             return Response({"status": "success", "message": "Article created successfully", "data": serializer.data},status=status.HTTP_201_CREATED)
+
+#     except Exception as e:
+#         logger.error(f"Article creation error: {str(e)}")
+#         return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticatedCustom])
 def create_article(request):
     """
-    Create an article.
+    Create an article (topics must be comma-separated string in body).
     """
     logger.info(f" Article creation attempt by user: {request.user.username}")
 
@@ -34,24 +126,12 @@ def create_article(request):
     get_code_block = request.data.get('code_block')
     get_is_member_only = request.data.get('is_member_only', False)
     get_allow_to_share_article = request.data.get('allow_to_share_article', False)
-    get_topic_ids = request.data.get('topics', [])
 
-    logger.debug(f"Article data - Title: {get_title}, Category: {get_category}, Publication: {get_publication_id}")
+    # Accept topics as a comma-separated string only
+    get_topic_str = request.data.get('topics', '')
+    get_topic_ids = [t.strip() for t in str(get_topic_str).split(',') if t.strip()]
 
-
-    try:
-        if str(get_topic_ids).strip().startswith('['):
-            get_topic_ids = json.loads(get_topic_ids)
-
-        elif ',' in str(get_topic_ids):
-            get_topic_ids = [t.strip() for t in str(get_topic_ids).split(',') if t.strip()]
-
-        elif get_topic_ids:
-            get_topic_ids = [str(get_topic_ids).strip()]
-        else:
-            get_topic_ids = []
-    except:
-        get_topic_ids = [str(get_topic_ids).strip()] if get_topic_ids else []
+    logger.debug(f"Article data - Title: {get_title}, Category: {get_category}, Topics: {get_topic_ids}")
 
     if not get_title or not get_content:
         logger.warning("Article creation failed - Missing title or content")
@@ -89,12 +169,9 @@ def create_article(request):
                 updated_by=request.user
             )
 
-            # --- Topic creation ---
+            # --- Topics creation ---
             for topic_name in get_topic_ids:
-                topic_name = str(topic_name).strip()
-                if not topic_name:
-                    continue
-                topic_obj, created = Topics.objects.get_or_create(topic_name=topic_name)
+                topic_obj, _ = Topics.objects.get_or_create(topic_header_1=topic_name)
                 ArticlePublicationTopic.objects.create(topic=topic_obj, article=article)
                 topic_obj.total_stories = topic_obj.total_stories + 1
                 topic_obj.save()
@@ -105,7 +182,7 @@ def create_article(request):
 
     except Exception as e:
         logger.error(f"Article creation error: {str(e)}")
-        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 ## Update article
 @api_view(['PUT'])
@@ -706,7 +783,7 @@ def share_article(request):
             original_article.share_count += 1
             original_article.save()
 
-            logger.success(f"✅ Article shared successfully: {original_article.article_title} -> {shared_article.article_id} by {user.username}")
+            logger.success(f"Article shared successfully: {original_article.article_title} -> {shared_article.article_id} by {user.username}")
             serializer = ArticleFeedSerializer(shared_article)
             return Response({"status": "success","message": "Article shared successfully.","shared_article": serializer.data}, status=status.HTTP_200_OK)
 
@@ -828,3 +905,32 @@ def get_articles_stats(request):
     except Exception as e:
         logger.error(f"Error fetching article stats: {str(e)}")
         return Response({"status": "error","message": "Failed to fetch article stats.","error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+## Get Trending Articles
+@api_view(['GET'])
+@permission_classes([IsAuthenticatedCustom])
+def get_trending_articles(request):
+    """
+    Get trending articles based on engagement.
+    """
+    try:
+        articles = Article.objects.filter(is_reported=False, show_less_like_this=False).annotate(engagement_score=(
+                                           F('clap_count') + F('comment_count') + F('share_count'))).order_by('-engagement_score')[:10]
+
+        trending_data = []
+        for rank, article in enumerate(articles, 1):
+            trending_data.append({
+                "article_id": article.article_id,
+                "article_title": article.article_title,
+                "author": article.author.username,
+                "clap_count": article.clap_count,
+                "comment_count": article.comment_count,
+                "share_count": article.share_count,
+                "engagement_score": article.engagement_score,
+                "trending_rank": rank
+            })
+
+        return Response({"status": "success","message": "Trending articles fetched","results": trending_data}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)

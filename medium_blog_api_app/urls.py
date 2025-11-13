@@ -23,6 +23,7 @@ urlpatterns = [
     path('get-any-users/', view_other_user_profile),
     path('get-my-following-list/', view_my_following_list),
     path('all-search/', all_search),
+    path('view-all-users-admin/', view_all_user_list),
 
     #-------- ARTICLES --------#
     path('new-story/', create_article),
@@ -40,6 +41,7 @@ urlpatterns = [
     path('mute-publication/', mute_publication),
     path('show-less/', show_less_like_this_func),
     path('get-articles-stats/', get_articles_stats),
+    path('trending-articles/', get_trending_articles),
     
     #-------- TOPICS --------#
     path('create-topic/', create_topic),

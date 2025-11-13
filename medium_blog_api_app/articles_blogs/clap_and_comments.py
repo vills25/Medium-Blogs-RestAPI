@@ -16,18 +16,21 @@ def give_clap(request):
     """
     Give a clap to an article.
     """
-    logger.info(f"Clap attempt by user: {request.user.username}")
+    user = request.user
+    logger.info(f"Clap attempt by user: {user.username}")
 
+    article_id = request.data.get('article_id')
+
+    if not article_id:
+        logger.warning("Clap failed - article_id required")
+        return Response({"status": "error", "message": "article_id is required"}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        article_id = request.data.get('article_id')
-
-        if not article_id:
-            logger.warning("Clap failed - article_id required")
-            return Response({"status": "error", "message": "article_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        article = Article.objects.get(article_id=article_id)
 
         # Check if user already clapped this article
-        if Article.objects.filter(article_id=article_id, clap_count=request.user).exists():
-            logger.warning(f"User {request.user.username} already clapped article {article_id}")
+        if Article.objects.filter(article_id=article_id, clapped_by = user).exists():
+            logger.warning(f"User {user.username} already clapped article {article_id}")
             return Response({"status": "error", "message": "You already clapped this article"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
@@ -35,9 +38,13 @@ def give_clap(request):
             logger.debug(f"Article found: {article.article_title} (ID: {article.article_id})")
 
             with transaction.atomic():
-                article.clap_count += 1
+                # article.clap_count += 1
+                # article.save()
+                article.clapped_by.add(user)
+                article.clap_count = article.clapped_by.count()
                 article.save()
-                logger.success(f"Clap added to article '{article.article_title}' by user {request.user.username}")
+                
+                logger.success(f"Clap added to article '{article.article_title}' by user {user.username}")
                 return Response({"status": "success", "message": "Clapped"}, status=status.HTTP_200_OK)
 
         except Article.DoesNotExist:

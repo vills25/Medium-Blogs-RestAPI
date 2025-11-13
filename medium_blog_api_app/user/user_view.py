@@ -1,12 +1,12 @@
 from django.forms import ValidationError
 from loguru import logger
-from medium_blog_api_app.authentication.custom_jwt_auth import IsAuthenticatedCustom
+from medium_blog_api_app.authentication.custom_jwt_auth import IsAuthenticatedCustom, IsAdminCustom
 from medium_blog_api_app.models import * 
 from medium_blog_api_app.serializers import *
 from rest_framework.response import Response
 from tokenize import TokenError
 from django.db.models import Q
-from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import make_password, check_password
@@ -963,3 +963,51 @@ def all_search(request):
         logger.error(f"Search for users, publications, and topics error for user: {user.username}: {str(e)}")
         return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
 
+## View All user's list by Admin, enable search for pecific user or get all user.
+@api_view(['POST'])
+@permission_classes([IsAdminCustom])
+def view_all_user_list(request):
+    """
+    View all user's list by Admin, enable search for specific user or get all users.
+
+    Request Body (Optional fields):
+    {
+        "enter_search_text": "string (optional)"
+    }
+    """
+    user = request.user
+    try:
+        logger.info(f"Admin {user} requested to view all users or search specific user")
+
+        enter_search_text = request.data.get('enter_search_text', '').strip()
+
+        if enter_search_text:
+            users = User.objects.filter(Q(user_id__icontains=enter_search_text)| Q(username__icontains=enter_search_text) | Q(full_name__icontains=enter_search_text))
+
+        else:
+            users = User.objects.all()
+
+        users_data = []
+        for u in users:
+            users_data.append({
+                "user_id": u.user_id,
+                "username": u.username,
+                "full_name": u.full_name,
+                "email": u.email,
+                "profile_image": request.build_absolute_uri(u.profile_pic.url) if u.profile_pic else None,
+                "gender": u.gender,
+                "is_active": u.is_active,
+                "is_member": u.is_member,
+                "is_admin": u.is_admin
+            })
+
+        if not users_data:
+            logger.warning("No users found for given filters")
+            return Response({"status": "error", "message": "No users found"},status=status.HTTP_404_NOT_FOUND)
+
+        logger.success(f"User list fetched successfully by Admin: {user}")
+        return Response({"status": "success", "message": "User list fetched successfully", "results": users_data},status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error fetching user list by Admin {user}: {str(e)}")
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
