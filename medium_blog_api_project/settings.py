@@ -136,7 +136,7 @@ WSGI_APPLICATION = 'medium_blog_api_project.wsgi.application'
 #     'NAME': 'medium_blog_api_database',
 #     'USER': 'root',
 #     'PASSWORD': '',
-#     'HOST': '127.0.0.1',
+#     'HOST': 'localhost',
 #     'PORT': '3306',
 #     }
 # }
@@ -144,7 +144,7 @@ WSGI_APPLICATION = 'medium_blog_api_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'vishalmediumblog$vishalmediumblogapidatabase',  # jo aapne database name diya
+        'NAME': 'vishalmediumblog$default',  # jo aapne database name diya
         'USER': 'vishalmediumblog',         # aapka PythonAnywhere username
         'PASSWORD': 'Vishal@123',        # jo password set kiya
         'HOST': 'vishalmediumblogapi.mysql.pythonanywhere-services.com',
