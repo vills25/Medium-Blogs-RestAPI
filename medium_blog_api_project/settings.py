@@ -136,7 +136,8 @@ DATABASES = {
     'NAME': 'medium_blog_api_database',
     'USER': 'root',
     'PASSWORD': '',
-    'HOST': 'localhost',
+    # 'HOST': 'localhost',
+    'HOST': '127.0.0.1',
     'PORT': '3306',
     }
 }

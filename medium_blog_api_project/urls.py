@@ -21,3 +21,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('medium_blog_api_app.urls')),
 ]
+    
