@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-($!x0_-yl-0ub3e4$t94)oofe(x983!1m1_i@80xd7l=redw1k'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -130,27 +130,27 @@ WSGI_APPLICATION = 'medium_blog_api_project.wsgi.application'
 #     }
 # }
 
-# DATABASES = {
-#   'default' : {
-#     'ENGINE': 'django.db.backends.mysql',
-#     'NAME': 'medium_blog_api_database',
-#     'USER': 'root',
-#     'PASSWORD': '',
-#     'HOST': 'localhost',
-#     'PORT': '3306',
-#     }
-# }
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'vishalmediumblog$default',  # jo aapne database name diya
-        'USER': 'vishalmediumblog',         # aapka PythonAnywhere username
-        'PASSWORD': 'Vishal@123',        # jo password set kiya
-        'HOST': 'vishalmediumblogapi.mysql.pythonanywhere-services.com',
-        'PORT': '3306',
+  'default' : {
+    'ENGINE': 'django.db.backends.mysql',
+    'NAME': 'medium_blog_api_database',
+    'USER': 'root',
+    'PASSWORD': '',
+    'HOST': 'localhost',
+    'PORT': '3306',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'vishalmediumblog$default',  # PythonAnywhere database name
+#         'USER': 'vishalmediumblog',         # PythonAnywhere username
+#         'PASSWORD': 'Vishal@123', 
+#         'HOST': 'vishalmediumblogapi.mysql.pythonanywhere-services.com',
+#         'PORT': '3306',
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -187,12 +187,6 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-
-
-# MEDIA_URL = '/media/'
-# MEDIA_ROOT = BASE_DIR / 'media'
-    
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
