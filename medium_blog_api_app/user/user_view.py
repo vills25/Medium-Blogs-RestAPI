@@ -109,7 +109,7 @@ def register_user(request):
 
     except Exception as e:
         logger.error(f"User registration error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Login user
 @api_view(['POST'])
@@ -492,6 +492,10 @@ def forgot_password(request):
         logger.warning(f"Forgot password failed - User not found with email: {email}")
         return Response({"status":"fail","message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
     
+    except Exception as e:
+        logger.warning(f"forgot password error for user {user.username}: {str(e)}")
+        return Response({"status":"error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 ## Reset Password
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -602,7 +606,7 @@ def follow_user(request):
 
     except Exception as e:
         logger.error(f"Follow user error for user: {follower.username}: {str(e)}")
-        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Unfollow user
 @api_view(['POST'])
@@ -653,7 +657,7 @@ def unfollow_user(request):
 
     except Exception as e:
         logger.error(f"Unfollow user error for user: {follower.username}: {str(e)}")
-        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## View my profile
 @api_view(['GET'])
@@ -800,7 +804,7 @@ def view_my_following_list(request):
 
     except Exception as e:
         logger.error(f"View my following list error for user: {request.user.username}: {str(e)}")
-        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## all search
 @api_view(['POST'])
@@ -961,7 +965,7 @@ def all_search(request):
 
     except Exception as e:
         logger.error(f"Search for users, publications, and topics error for user: {user.username}: {str(e)}")
-        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## View All user's list by Admin, enable search for pecific user or get all user.
 @api_view(['POST'])
@@ -1010,4 +1014,4 @@ def view_all_user_list(request):
 
     except Exception as e:
         logger.error(f"Error fetching user list by Admin {user}: {str(e)}")
-        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)

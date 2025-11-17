@@ -16,97 +16,6 @@ from django.db.models import F
 
 
 ## Create articles
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticatedCustom])
-# def create_article(request):
-#     """
-#     Create an article.
-#     """
-#     logger.info(f" Article creation attempt by user: {request.user.username}")
-
-#     get_title = request.data.get('article_title')
-#     get_content = request.data.get('article_content')
-#     get_subtitle = request.data.get('article_subtitle')
-#     get_category = request.data.get('article_category')
-#     get_publication_id = request.data.get('publication_id')
-#     get_url = request.data.get('url')
-#     get_img = request.FILES.get('image')
-#     get_video = request.data.get('video')
-#     get_code_block = request.data.get('code_block')
-#     get_is_member_only = request.data.get('is_member_only', False)
-#     get_allow_to_share_article = request.data.get('allow_to_share_article', False)
-#     get_topic_ids = request.data.get('topics', [])
-
-#     logger.debug(f"Article data - Title: {get_title}, Category: {get_category}, Publication: {get_publication_id}")
-
-#     try:
-#         if str(get_topic_ids).strip().startswith('['):
-#             get_topic_ids = json.loads(get_topic_ids)
-
-#         elif ',' in str(get_topic_ids):
-#             get_topic_ids = [t.strip() for t in str(get_topic_ids).split(',') if t.strip()]
-
-#         elif get_topic_ids:
-#             get_topic_ids = [str(get_topic_ids).strip()]
-#         else:
-#             get_topic_ids = []
-#     except:
-#         get_topic_ids = [str(get_topic_ids).strip()] if get_topic_ids else []
-
-#     if not get_title or not get_content:
-#         logger.warning("Article creation failed - Missing title or content")
-#         return Response({"status": "fail", "message": "article_title and article_content are required"},status=status.HTTP_400_BAD_REQUEST)
-
-#     if get_img:
-#         validate_image(get_img)
-
-#     read_time = estimate_read_time(get_content)
-
-#     try:
-#         with transaction.atomic():
-#             publication = None
-#             if get_publication_id:
-#                 publication = Publication.objects.filter(publication_id=get_publication_id).first()
-#                 if not publication:
-#                     logger.warning(f"Publication not found: {get_publication_id}")
-#                     return Response({"status": "error", "message": "publication not found"},status=status.HTTP_404_NOT_FOUND)
-
-#             article = Article.objects.create(
-#                                             publication = publication,
-#                                             author = request.user,
-#                                             article_title = get_title,
-#                                             article_subtitle = get_subtitle,
-#                                             article_content = get_content,
-#                                             article_category = get_category,
-#                                             url = get_url,
-#                                             image = get_img,
-#                                             video = get_video,
-#                                             code_block = get_code_block,
-#                                             read_time = read_time,
-#                                             is_member_only = get_is_member_only,
-#                                             allow_to_share_article = get_allow_to_share_article,
-#                                             published_by = request.user,
-#                                             updated_by = request.user
-#                                         )
-
-#             # --- Topic creation ---
-#             for topic_name in get_topic_ids:
-#                 topic_name = str(topic_name).strip()
-#                 if not topic_name:
-#                     continue
-#                 topic_obj, created = Topics.objects.get_or_create(topic_header_1 = topic_name)
-#                 ArticlePublicationTopic.objects.create(topic = topic_obj, article = article)
-#                 topic_obj.total_stories = topic_obj.total_stories + 1
-#                 topic_obj.save()
-
-#             logger.success(f"Article created successfully: {get_title} (ID: {article.article_id})")
-#             serializer = ArticleDetailSerializer(article, context={'request': request})
-#             return Response({"status": "success", "message": "Article created successfully", "data": serializer.data},status=status.HTTP_201_CREATED)
-
-#     except Exception as e:
-#         logger.error(f"Article creation error: {str(e)}")
-#         return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticatedCustom])
 def create_article(request):
@@ -182,7 +91,7 @@ def create_article(request):
 
     except Exception as e:
         logger.error(f"Article creation error: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Update article
 @api_view(['PUT'])
@@ -294,7 +203,7 @@ def update_article(request):
 
     except Exception as e:
         logger.error(f"Article update error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticatedCustom])
@@ -344,7 +253,7 @@ def delete_article(request):
 
     except Exception as e:
         logger.error(f"Article deletion error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Search Articles
 @api_view(['POST'])
@@ -411,7 +320,7 @@ def search_articles(request):
 
     except Exception as e:
         logger.error(f"Search error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## show my published articles
 @api_view(['GET'])
@@ -464,7 +373,7 @@ def get_my_articles(request):
 
     except Exception as e:
         logger.error(f"My articles error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Display all articles from all users for dashboard
 @api_view(['GET'])
@@ -551,7 +460,7 @@ def get_all_articles(request):
 
     except Exception as e:
         logger.error(f"All articles error: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Report an article (is_reported  = True)
 @api_view(['POST'])
@@ -587,7 +496,7 @@ def report_article(request):
 
     except Exception as e:
         logger.error(f"Article report error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## API for admin to see reported articles
 @api_view(['GET'])
@@ -612,7 +521,7 @@ def get_reported_articles(request):
 
     except Exception as e:
         logger.error(f"Reported articles error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## mute/unmute author
 @api_view(['POST'])
@@ -695,7 +604,7 @@ def mute_publication(request):
 
     except Exception as e:
         logger.error(f"Mute publication error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## show less like this show_less_like_this = True
 @api_view(['POST'])
@@ -735,7 +644,7 @@ def show_less_like_this_func(request):
 
     except Exception as e:
         logger.error(f"Show less like this error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Share API
 @api_view(['POST'])
@@ -839,7 +748,7 @@ def undo_reshare(request):
 
     except Exception as e:
         logger.error(f"Undo reshare error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## GET only shared articles
 @api_view(['GET'])
@@ -865,7 +774,7 @@ def get_shared_articles(request):
 
     except Exception as e:
         logger.error(f"Get shared articles error: {str(e)}")
-        return Response({"status":"error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status":"error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## GET articles stats
 @api_view(['GET'])
@@ -933,4 +842,4 @@ def get_trending_articles(request):
         return Response({"status": "success","message": "Trending articles fetched","results": trending_data}, status=status.HTTP_200_OK)
 
     except Exception as e:
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

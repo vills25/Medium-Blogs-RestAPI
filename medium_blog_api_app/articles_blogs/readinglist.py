@@ -63,7 +63,7 @@ def create_readinglist(request):
 
     except Exception as e:
         logger.error(f"Error creating readinglist: {e}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Get readinglist
 @api_view(['GET'])
@@ -84,7 +84,7 @@ def get_readinglist(request):
     
     except Exception as e:
         logger.error(f"Error getting readinglist: {e}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Edit readinglist
 @api_view(['PUT'])
@@ -119,7 +119,7 @@ def edit_readinglist(request):
 
     except Exception as e:
         logger.error(f"Error updating readinglist: {e}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Delete readinglist
 @api_view(['DELETE'])
@@ -159,7 +159,7 @@ def delete_readinglist(request):
 
     except Exception as e:
         logger.error(f"Error deleting readinglist: {e}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Add Multiple Articles to Reading List
 @api_view(['POST'])
@@ -235,7 +235,7 @@ def add_multiple_to_readinglist(request):
 
     except Exception as e:
         logger.error(f"Error adding multiple articles to readinglist: {e}")
-        return Response({"status": "error","message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error","message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Clear Reading List
 @api_view(['DELETE'])
@@ -272,7 +272,7 @@ def clear_readinglist(request):
 
     except Exception as e:
         logger.error(f"Error clearing readinglist: {e}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Search in Reading List
 @api_view(['POST'])
@@ -330,7 +330,7 @@ def search_readinglist(request):
 
     except Exception as e:
         logger.error(f"Error searching readinglist: {e}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Get Reading List Stats
 @api_view(['GET'])
@@ -374,4 +374,4 @@ def get_readinglist_stats(request):
     
     except Exception as e:
         logger.error(f"Error getting readinglist stats: {e}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

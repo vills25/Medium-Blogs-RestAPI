@@ -53,7 +53,7 @@ def give_clap(request):
 
     except Exception as e:
         logger.exception(f"Clap error: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Remove clap from articles
@@ -90,7 +90,7 @@ def remove_clap(request):
             return Response({"status": "error", "message": "article not found"}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         logger.exception(f"Remove clap error: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Add comment to article
@@ -135,7 +135,7 @@ def add_comment(request):
 
     except Exception as e:
         logger.exception(f"Add comment error: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Comment Edit
@@ -176,7 +176,7 @@ def edit_comment(request):
 
     except Exception as e:
         logger.exception(f"Edit comment error: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Remove comment from article
@@ -224,7 +224,7 @@ def remove_comment(request):
 
     except Exception as e:
         logger.exception(f"Remove comment error: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # Get user comments
@@ -252,4 +252,4 @@ def get_my_comments(request):
 
     except Exception as e:
         logger.exception(f"Get user comments error: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

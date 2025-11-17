@@ -54,7 +54,7 @@ def create_topic(request):
     
     except Exception as e:
         logger.error(f"Error creating topic: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Edit topics
 @api_view(['PUT'])
@@ -105,7 +105,7 @@ def edit_topic(request):
 
     except Exception as e:
         logger.error(f"Error editing topic: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## Delete topics
 @api_view(['DELETE'])
@@ -141,7 +141,7 @@ def delete_topic(request):
 
     except Exception as e:
         logger.error(f"Error deleting topic: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## view all topics
 @api_view(['GET'])
@@ -162,7 +162,7 @@ def view_all_topics(request):
     
     except Exception as e:
         logger.error(f"Error viewing all topics: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 ## view specific topic
@@ -195,7 +195,7 @@ def view_specific_topic(request):
 
     except Exception as e:
         logger.error(f"Error viewing topic: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## search topics
 @api_view(['POST'])
@@ -228,7 +228,7 @@ def search_topics(request):
     
     except Exception as e:
         logger.error(f"Error searching topics: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #################### PUBLICATION #####################
 ## Create publications
@@ -294,7 +294,7 @@ def create_publication(request):
     
     except Exception as e:
         logger.error(f"Error creating publication: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## Edit publications
 @api_view(['PUT'])
@@ -380,7 +380,7 @@ def edit_publication(request):
 
     except Exception as e:
         logger.error(f"Error editing publication: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## Delete publication
 @api_view(['DELETE'])
@@ -425,7 +425,7 @@ def delete_publication(request):
 
     except Exception as e:
         logger.error(f"Error deleting publication: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## view/Explore Publications
 @api_view(['GET'])
@@ -446,7 +446,7 @@ def view_publications(request):
     
     except Exception as e:
         logger.error(f"Error viewing publications: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 #################### STAFF PICKS APIs #####################
 
@@ -502,7 +502,7 @@ def add_staff_picks(request):
 
     except Exception as e:
         logger.error(f"Error adding staff pick: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## edit staff picks
 @api_view(['PUT'])
@@ -565,7 +565,7 @@ def edit_staff_picks(request):
 
     except Exception as e:
         logger.error(f"Error editing staff pick: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Remove from staff picks
 @api_view(['PUT'])
@@ -619,7 +619,7 @@ def remove_staff_pick_field(request):
     
     except Exception as e:
         logger.error(f"Error removing staff pick field: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## view all staff picks articles 
 @api_view(['GET'])
@@ -677,7 +677,7 @@ def view_all_staff_picks(request):
 
     except Exception as e:
         logger.error(f"Error viewing staff picks: {str(e)}")
-        return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## Follow Publications
 @api_view(['POST'])
@@ -724,7 +724,7 @@ def follow_publication(request):
 
     except Exception as e:
         logger.error(f"Error following publication: {str(e)}")
-        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## Unfollow Publications
 @api_view(['POST'])
@@ -771,4 +771,4 @@ def unfollow_publication(request):
 
     except Exception as e:
         logger.error(f"Error unfollowing publication: {str(e)}")
-        return Response({"status": "error", "message": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"status": "error", "message": str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
